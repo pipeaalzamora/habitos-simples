@@ -1,0 +1,6 @@
+{
+  "name": "HabitPulse - Rastreador de Hábitos y Rachas",
+  "description": "Rastreador minimalista de hábitos diarios con cálculo de rachas, estadísticas semanales y mensuales, modo oscuro y sincronización con Google Calendar.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
