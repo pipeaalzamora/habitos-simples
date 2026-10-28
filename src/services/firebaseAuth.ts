@@ -14,6 +14,9 @@ export const auth = getAuth(app);
 
 const provider = new GoogleAuthProvider();
 provider.addScope('https://www.googleapis.com/auth/calendar.events');
+provider.setCustomParameters({
+  prompt: 'consent',
+});
 
 let isSigningIn = false;
 let cachedAccessToken: string | null = null;
@@ -23,8 +26,7 @@ export const initAuth = (
 ) => {
   return onAuthStateChanged(auth, async (user: User | null) => {
     if (user) {
-      const idToken = await user.getIdToken().catch(() => null);
-      onAuthChange(user, cachedAccessToken || idToken);
+      onAuthChange(user, cachedAccessToken);
     } else {
       cachedAccessToken = null;
       onAuthChange(null, null);
@@ -47,8 +49,19 @@ export const googleSignIn = async (): Promise<{ user: User; accessToken: string 
   }
 };
 
-export const getAccessToken = async (): Promise<string | null> => {
-  return cachedAccessToken;
+export const getAccessToken = async (): Promise<string> => {
+  if (cachedAccessToken) {
+    return cachedAccessToken;
+  }
+  try {
+    const res = await googleSignIn();
+    if (res?.accessToken) {
+      return res.accessToken;
+    }
+  } catch (err) {
+    console.error('Error acquiring Google Calendar access token:', err);
+  }
+  throw new Error('Se requiere autorización con Google Calendar. Por favor, haz clic en "Acceder con Google".');
 };
 
 export const setCachedAccessToken = (token: string | null) => {
