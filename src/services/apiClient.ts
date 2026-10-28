@@ -1,7 +1,5 @@
 import type { Habit, HabitLog } from '../types';
 
-// Supports standalone frontend on AWS Amplify connecting to Render backend,
-// or unified deployment where frontend and backend are hosted together.
 const API_BASE = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '');
 
 export interface DbStatus {
@@ -9,6 +7,24 @@ export interface DbStatus {
   uriConfigured: boolean;
   mode: 'mongodb_atlas' | 'local_store';
 }
+
+export const syncUserApi = async (userData: {
+  uid: string;
+  email?: string | null;
+  displayName?: string | null;
+  photoURL?: string | null;
+  previousGuestId?: string;
+}): Promise<void> => {
+  try {
+    await fetch(`${API_BASE}/api/users/sync`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(userData),
+    });
+  } catch (err) {
+    console.warn('Could not sync user to MongoDB:', err);
+  }
+};
 
 export const fetchDbStatus = async (): Promise<DbStatus> => {
   try {

@@ -1,12 +1,20 @@
 import fs from 'fs';
 import path from 'path';
 import mongoose from 'mongoose';
-import { HabitModel, HabitLogModel } from './models';
+import { UserModel, HabitModel, HabitLogModel } from './models';
 
 const DATA_DIR = path.resolve(process.cwd(), 'data');
 const LOCAL_DB_FILE = path.join(DATA_DIR, 'mongodb_store.json');
 
 interface LocalDbSchema {
+  users?: Array<{
+    uid: string;
+    email?: string;
+    displayName?: string;
+    photoURL?: string;
+    createdAt: string;
+    lastLoginAt: string;
+  }>;
   habits: Array<{
     id: string;
     userId: string;
@@ -45,14 +53,16 @@ if (!fs.existsSync(DATA_DIR)) {
 const readLocalStore = (): LocalDbSchema => {
   try {
     if (!fs.existsSync(LOCAL_DB_FILE)) {
-      const empty: LocalDbSchema = { habits: [], logs: [] };
+      const empty: LocalDbSchema = { users: [], habits: [], logs: [] };
       fs.writeFileSync(LOCAL_DB_FILE, JSON.stringify(empty, null, 2), 'utf-8');
       return empty;
     }
     const raw = fs.readFileSync(LOCAL_DB_FILE, 'utf-8');
-    return JSON.parse(raw);
+    const parsed = JSON.parse(raw);
+    if (!parsed.users) parsed.users = [];
+    return parsed;
   } catch {
-    return { habits: [], logs: [] };
+    return { users: [], habits: [], logs: [] };
   }
 };
 
@@ -91,6 +101,70 @@ export const getDbStatus = () => {
     uriConfigured,
     mode: isMongooseConnected ? 'mongodb_atlas' : 'local_store',
   };
+};
+
+// Register/Sync User in MongoDB
+export const syncUserToDb = async (userData: {
+  uid: string;
+  email?: string;
+  displayName?: string;
+  photoURL?: string;
+}) => {
+  if (isMongooseConnected) {
+    const user = await UserModel.findOneAndUpdate(
+      { uid: userData.uid },
+      {
+        $set: {
+          email: userData.email,
+          displayName: userData.displayName,
+          photoURL: userData.photoURL,
+          lastLoginAt: new Date(),
+        },
+        $setOnInsert: { createdAt: new Date() },
+      },
+      { upsert: true, new: true }
+    );
+    return user;
+  }
+
+  const store = readLocalStore();
+  if (!store.users) store.users = [];
+  const idx = store.users.findIndex((u) => u.uid === userData.uid);
+  const now = new Date().toISOString();
+  if (idx >= 0) {
+    store.users[idx] = {
+      ...store.users[idx],
+      ...userData,
+      lastLoginAt: now,
+    };
+  } else {
+    store.users.push({
+      ...userData,
+      createdAt: now,
+      lastLoginAt: now,
+    });
+  }
+  writeLocalStore(store);
+  return userData;
+};
+
+// Assign habits from a temporary guest session to the authenticated user
+export const assignHabitsToUser = async (fromUserId: string, toUserId: string) => {
+  if (!fromUserId || !toUserId || fromUserId === toUserId) return;
+  if (isMongooseConnected) {
+    await HabitModel.updateMany({ userId: fromUserId }, { $set: { userId: toUserId } });
+    await HabitLogModel.updateMany({ userId: fromUserId }, { $set: { userId: toUserId } });
+    return;
+  }
+
+  const store = readLocalStore();
+  store.habits.forEach((h) => {
+    if (h.userId === fromUserId) h.userId = toUserId;
+  });
+  store.logs.forEach((l) => {
+    if (l.userId === fromUserId) l.userId = toUserId;
+  });
+  writeLocalStore(store);
 };
 
 // Unified Repository methods

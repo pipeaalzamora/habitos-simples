@@ -8,6 +8,8 @@ import { createServer as createViteServer } from 'vite';
 
 import {
   initDatabase,
+  syncUserToDb,
+  assignHabitsToUser,
   getHabitsByUser,
   createHabitForUser,
   updateHabitForUser,
@@ -25,7 +27,6 @@ const app = express();
 // Render automatically injects the PORT environment variable
 const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
 
-// Enable CORS for external frontends or cross-origin requests
 app.use(
   cors({
     origin: true,
@@ -37,7 +38,7 @@ app.use(express.json());
 // Initialize MongoDB connection
 await initDatabase();
 
-// Healthcheck endpoints for Render monitoring and zero-downtime deploys
+// Healthcheck endpoints for Render
 app.get(['/healthz', '/api/health'], (_req, res) => {
   res.status(200).json({ status: 'ok', uptime: process.uptime(), timestamp: new Date().toISOString() });
 });
@@ -51,7 +52,30 @@ const getUserId = (req: express.Request): string => {
   return 'anonymous-user';
 };
 
-// API Routes
+// Register / Sync User in MongoDB
+app.post('/api/users/sync', async (req, res) => {
+  try {
+    const { uid, email, displayName, photoURL, previousGuestId } = req.body;
+    if (!uid) {
+      return res.status(400).json({ error: 'uid is required' });
+    }
+
+    // Save/update user profile in MongoDB
+    const user = await syncUserToDb({ uid, email, displayName, photoURL });
+
+    // If the user created habits before logging in, reassign them to their registered account
+    if (previousGuestId && previousGuestId !== uid) {
+      await assignHabitsToUser(previousGuestId, uid);
+    }
+
+    res.json({ success: true, user });
+  } catch (error: unknown) {
+    console.error('Error syncing user in MongoDB:', error);
+    res.status(500).json({ error: (error as Error).message });
+  }
+});
+
+// Habits API
 app.get('/api/habits', async (req, res) => {
   try {
     const userId = getUserId(req);
@@ -99,6 +123,7 @@ app.delete('/api/habits/:id', async (req, res) => {
   }
 });
 
+// Logs API
 app.get('/api/logs', async (req, res) => {
   try {
     const userId = getUserId(req);
@@ -130,19 +155,35 @@ app.post('/api/logs', async (req, res) => {
   }
 });
 
-// Vite Dev Server middleware or Static Production build
+// Vite Dev Server or Production Static Serving
 const distPath = path.join(__dirname, 'dist');
-if (process.env.NODE_ENV === 'production' || fs.existsSync(distPath)) {
+const indexHtmlPath = path.join(distPath, 'index.html');
+
+if (fs.existsSync(indexHtmlPath)) {
   app.use(express.static(distPath));
   app.get('*', (_req, res) => {
-    res.sendFile(path.join(distPath, 'index.html'));
+    res.sendFile(indexHtmlPath);
   });
-} else {
+} else if (process.env.NODE_ENV !== 'production') {
   const vite = await createViteServer({
     server: { middlewareMode: true },
     appType: 'spa',
   });
   app.use(vite.middlewares);
+} else {
+  // Graceful fallback if dist wasn't built
+  app.get('*', (_req, res) => {
+    res.status(200).send(`
+      <!DOCTYPE html>
+      <html lang="es">
+        <head><meta charset="UTF-8"><title>HabitPulse Backend</title></head>
+        <body style="font-family:system-ui,-apple-system,sans-serif;text-align:center;padding:50px;background:#09090b;color:#f4f4f5;">
+          <h2 style="color:#10b981;">HabitPulse API & Backend Activo 🚀</h2>
+          <p>Conectado a MongoDB. Endpoints de la API disponibles.</p>
+        </body>
+      </html>
+    `);
+  });
 }
 
 app.listen(PORT, '0.0.0.0', () => {

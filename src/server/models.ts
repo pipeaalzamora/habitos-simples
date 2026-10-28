@@ -1,5 +1,25 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
+export interface IUser extends Document {
+  uid: string; // Firebase Auth UID
+  email?: string;
+  displayName?: string;
+  photoURL?: string;
+  createdAt: Date;
+  lastLoginAt: Date;
+}
+
+const UserSchema = new Schema<IUser>(
+  {
+    uid: { type: String, required: true, unique: true, index: true },
+    email: { type: String, trim: true },
+    displayName: { type: String, trim: true },
+    photoURL: { type: String },
+    lastLoginAt: { type: Date, default: Date.now },
+  },
+  { timestamps: true }
+);
+
 export interface IHabit extends Document {
   userId: string;
   title: string;
@@ -58,6 +78,9 @@ const HabitLogSchema = new Schema<IHabitLog>(
 
 // Compound index to prevent duplicate logs per habit per date
 HabitLogSchema.index({ userId: 1, habitId: 1, date: 1 }, { unique: true });
+
+export const UserModel =
+  mongoose.models.User || mongoose.model<IUser>('User', UserSchema);
 
 export const HabitModel =
   mongoose.models.Habit || mongoose.model<IHabit>('Habit', HabitSchema);

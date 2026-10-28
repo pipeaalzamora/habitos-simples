@@ -41,6 +41,7 @@ import {
   deleteHabitApi,
   fetchLogs,
   upsertLogApi,
+  syncUserApi,
 } from './services/apiClient';
 
 import { Navbar } from './components/Navbar';
@@ -113,10 +114,22 @@ export default function App() {
 
   // Initialize Firebase Auth listener
   useEffect(() => {
-    const unsubscribe = initAuth((user, token) => {
+    const unsubscribe = initAuth(async (user, token) => {
       setFirebaseUser(user);
       setCachedAccessToken(token);
-      loadUserData(user?.uid || 'guest-user');
+      if (user) {
+        // Register user in MongoDB and assign any previous guest habits
+        await syncUserApi({
+          uid: user.uid,
+          email: user.email,
+          displayName: user.displayName,
+          photoURL: user.photoURL,
+          previousGuestId: 'guest-user',
+        });
+        loadUserData(user.uid);
+      } else {
+        loadUserData('guest-user');
+      }
     });
     return () => unsubscribe();
   }, [loadUserData]);
@@ -127,6 +140,14 @@ export default function App() {
       const res = await googleSignIn();
       if (res) {
         setFirebaseUser(res.user);
+        await syncUserApi({
+          uid: res.user.uid,
+          email: res.user.email,
+          displayName: res.user.displayName,
+          photoURL: res.user.photoURL,
+          previousGuestId: 'guest-user',
+        });
+        await loadUserData(res.user.uid);
       }
     } catch (err) {
       console.error('Error logging in with Google:', err);

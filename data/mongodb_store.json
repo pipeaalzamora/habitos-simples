@@ -1,4 +1,13 @@
 {
   "habits": [],
-  "logs": []
+  "logs": [],
+  "users": [
+    {
+      "uid": "test-user-123",
+      "email": "test@example.com",
+      "displayName": "Tester",
+      "createdAt": "2026-10-28T15:56:49.265Z",
+      "lastLoginAt": "2026-10-28T15:56:49.265Z"
+    }
+  ]
 }
