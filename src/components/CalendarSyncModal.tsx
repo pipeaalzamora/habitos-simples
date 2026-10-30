@@ -82,7 +82,7 @@ export const CalendarSyncModal: React.FC<CalendarSyncModalProps> = ({
   if (!isOpen) return null;
 
   const handleScheduleHabit = (habit: Habit) => {
-    const time = '09:00';
+    const time = habit.time || '09:00';
     setConfirmDialog({
       isOpen: true,
       title: 'Agendar en Google Calendar',
@@ -118,8 +118,8 @@ export const CalendarSyncModal: React.FC<CalendarSyncModalProps> = ({
         try {
           let currentHour = 9;
           for (const habit of habits) {
-            const timeStr = `${String(currentHour).padStart(2, '0')}:00`;
-            await createHabitCalendarEvent(habit, selectedDate, timeStr, 25);
+            const timeStr = habit.time || `${String(currentHour).padStart(2, '0')}:00`;
+            await createHabitCalendarEvent(habit, selectedDate, timeStr, 30);
             currentHour = Math.min(20, currentHour + 1);
           }
           setSuccessMsg(`Se han sincronizado ${habits.length} hábitos en tu Google Calendar.`);
@@ -301,7 +301,7 @@ export const CalendarSyncModal: React.FC<CalendarSyncModalProps> = ({
                               {habit.title}
                             </span>
                             <span className="text-[10px] text-zinc-500 capitalize">
-                              {habit.category} • Bloque sugerido 30m
+                              {habit.category} • Horario: {habit.time || '09:00'} (30m)
                             </span>
                           </div>
                         </div>

@@ -16,6 +16,7 @@ export interface Habit {
   color: string; // Tailwind color hex or class
   icon: string;
   createdAt: string; // ISO
+  time?: string; // e.g. '08:00'
   calendarEventSummary?: string;
 }
 

@@ -30,6 +30,7 @@ export const HabitFormModal: React.FC<HabitFormModalProps> = ({
   const [goalType, setGoalType] = useState<HabitGoalType>('boolean');
   const [targetValue, setTargetValue] = useState<number>(10);
   const [unit, setUnit] = useState('veces');
+  const [time, setTime] = useState('08:00');
 
   useEffect(() => {
     if (habitToEdit) {
@@ -39,6 +40,7 @@ export const HabitFormModal: React.FC<HabitFormModalProps> = ({
       setGoalType(habitToEdit.goalType);
       setTargetValue(habitToEdit.targetValue || 10);
       setUnit(habitToEdit.unit || 'veces');
+      setTime(habitToEdit.time || '08:00');
     } else {
       setTitle('');
       setDescription('');
@@ -46,6 +48,7 @@ export const HabitFormModal: React.FC<HabitFormModalProps> = ({
       setGoalType('boolean');
       setTargetValue(10);
       setUnit('veces');
+      setTime('08:00');
     }
   }, [habitToEdit, isOpen]);
 
@@ -67,6 +70,7 @@ export const HabitFormModal: React.FC<HabitFormModalProps> = ({
       unit: goalType === 'numeric' ? unit.trim() : undefined,
       color: habitToEdit?.color || matchedCategory?.defaultColor || '#10B981',
       icon: habitToEdit?.icon || matchedCategory?.icon || '🎯',
+      time: time || '08:00',
     });
     onClose();
   };
@@ -121,6 +125,19 @@ export const HabitFormModal: React.FC<HabitFormModalProps> = ({
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Detalle o meta personal..."
               className="w-full px-3.5 py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:outline-hidden focus:ring-1 focus:ring-emerald-500"
+            />
+          </div>
+
+          {/* Horario */}
+          <div>
+            <label className="block font-medium text-zinc-700 dark:text-zinc-300 mb-1.5">
+              Horario (Hora del hábito)
+            </label>
+            <input
+              type="time"
+              value={time}
+              onChange={(e) => setTime(e.target.value)}
+              className="w-full px-3.5 py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 text-sm focus:outline-hidden focus:ring-1 focus:ring-emerald-500"
             />
           </div>
 

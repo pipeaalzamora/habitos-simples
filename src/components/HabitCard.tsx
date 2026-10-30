@@ -9,6 +9,7 @@ import {
   Trash2,
   Calendar,
   MessageSquare,
+  Clock,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import type { Habit, HabitLog } from '../types';
@@ -126,6 +127,12 @@ export const HabitCard: React.FC<HabitCardProps> = ({
               {/* Category pill */}
               <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300">
                 {categoryLabels[habit.category] || habit.category}
+              </span>
+
+              {/* Time pill */}
+              <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center space-x-1">
+                <Clock className="w-3 h-3" />
+                <span>{habit.time || '08:00'}</span>
               </span>
             </div>
 
