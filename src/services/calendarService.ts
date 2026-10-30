@@ -52,7 +52,7 @@ export const createHabitCalendarEvent = async (
   const end = new Date(start.getTime() + durationMinutes * 60 * 1000);
 
   const eventPayload = {
-    summary: `${habit.icon} ${habit.title} [HabitPulse]`,
+    summary: `${habit.icon ? `${habit.icon} ` : ''}${habit.title} [HabitPulse]`,
     description: `Hábito de HabitPulse: ${habit.title}${habit.description ? `\nDetalles: ${habit.description}` : ''}\nCategoría: ${habit.category}\n¡Mantén tu racha diaria!`,
     start: {
       dateTime: start.toISOString(),
@@ -66,7 +66,7 @@ export const createHabitCalendarEvent = async (
       useDefault: false,
       overrides: [
         { method: 'popup', minutes: 10 },
-        { method: 'notification', minutes: 30 },
+        { method: 'popup', minutes: 30 },
       ],
     },
     colorId: '2', // Sage / Green in Google Calendar
